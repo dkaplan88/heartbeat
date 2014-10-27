@@ -2,18 +2,22 @@
 #
 # Table name: submissions
 #
-#  id           :uuid             not null, primary key
-#  user_id      :uuid
-#  completed    :boolean          default(FALSE), not null
-#  completed_at :datetime
-#  comments     :string(140)
-#  created_at   :datetime
-#  updated_at   :datetime
+#  id              :uuid             not null, primary key
+#  user_id         :uuid
+#  completed       :boolean          default(FALSE), not null
+#  completed_at    :datetime
+#  comments        :string(140)
+#  created_at      :datetime
+#  updated_at      :datetime
+#  comments_public :boolean          default(TRUE)
+#  tags            :string(255)      default([]), is an Array
 #
 
 require 'spec_helper'
 
 describe Submission do
+
+  subject { create :submission }
 
   describe '#seed_metrics!' do
     before(:each) do
@@ -133,6 +137,60 @@ describe Submission do
       submission.should_not be_closed
       submission.update_column :created_at, (1.week.ago - 1.day)
       submission.should be_closed
+    end
+  end
+
+  describe '#rating' do
+    it 'should be the average of all ratings, if complete' do
+      submission = create :submission
+      submission.should_not be_completed
+      submission.rating.should be_nil
+
+      submission = create :completed_submission
+      submission.should be_completed
+      submission.rating.should == submission.submission_metrics.average(:rating)
+    end
+  end
+
+  describe '#url' do
+    specify { subject.url.should == "http://heartbeat.dev/submissions/#{subject.id}" }
+  end
+
+  describe '#to_liquid' do
+    specify do
+      subject.to_liquid.should == {
+        'url' => "http://heartbeat.dev/submissions/#{subject.id}",
+      }
+    end
+  end
+
+  describe '#set_tags_from_user' do
+    let(:user) { user = create :user, tags: ['one', 'two'] }
+
+    it 'should happen on initialize for something new' do
+      user.submissions.new.tags.should == user.tags
+    end
+
+    it 'should preserve existing tags' do
+      # neither for a new object
+      Submission.create!(user: user, tags: ['foo', 'bar']).tags.should_not == ['one', 'two']
+
+      # nor for an old one
+      Submission.first.tags.should_not == ['one', 'two']
+    end
+
+    it 'should not freak out when missing a user' do
+      Submission.new.tags.should be_empty
+    end
+  end
+
+  describe 'saving tags should update the user' do
+    it 'should update the user with the new tags' do
+      submission = create :submission
+      submission.tags = ['one', 'two', 'three']
+      submission.user.tags.should_not == submission.tags
+      submission.save!
+      submission.user.reload.tags.should == submission.tags
     end
   end
 

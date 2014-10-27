@@ -1,7 +1,29 @@
 class Admin::UsersController < Admin::BaseController
 
   def index
-    @users = User.order('email asc')
+    @users = User.order('active desc, email asc')
+  end
+
+  def edit
+    @user = User.find params[:id]
+  end
+
+  def update
+    @user = User.find params[:id]
+    @user.update_attributes! user_params
+
+    flash.notice = 'Got it.'
+
+    redirect_to action: :edit
+  end
+
+
+  # less resourceful things
+
+  def become
+    @user = User.find params[:id]
+    sign_in @user
+    redirect_to :root
   end
 
   def import
@@ -19,6 +41,13 @@ class Admin::UsersController < Admin::BaseController
 
       redirect_to action: :index
     end
+  end
+
+
+  protected
+
+  def user_params
+    params.require(:user).permit(:name, :manager_user_id, :tags_as_string, :active, :admin, report_ids: [])
   end
 
 end

@@ -1,8 +1,14 @@
-%h1 Users
+= render partial: 'nav'
 
-%p
-  = link_to 'Import', [:import, :admin, :users]
-
-%ul
+%table.table
   - @users.each do |user|
-    %li= user.email
+    %tr{class: ('muted strikethrough' if user.inactive?)}
+      %td= link_to user.abbreviated_name, [:edit, :admin, user]
+      %td= user.email
+      %td.muted= user.tags_as_string
+      %td
+        - if user.manager.nil?
+          .danger{title: 'no manager!'}= icon('user')
+      %td
+        - if Rails.env.development?
+          = link_to 'Become', [:become, :admin, user], method: :post

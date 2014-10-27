@@ -1,0 +1,42 @@
+header.main {
+  padding: 20px 0 10px;
+  line-height: $headings-line-height * $font-size-base * 1.8;
+
+  .brand {
+    font-family: $headings-font-family;
+
+    div {
+      display: inline;
+    }
+
+    a:hover {
+      text-decoration: none;
+    }
+  }
+
+  .heartbeat {
+    font-size: $font-size-base * 1.8;
+    font-weight: $headings-font-weight;
+  }
+
+  .tenant {
+    font-size: $font-size-base * 1.6;
+    font-weight: $light-font-weight;
+    color: $gray;
+    margin-left: $font-size-base;
+  }
+
+  .user {
+    white-space: nowrap;
+    text-align: right;
+    font-weight: $light-font-weight;
+
+    div {
+      display: inline;
+    }
+
+    .sign-out {
+      margin-left: 10px;
+    }
+  }
+}

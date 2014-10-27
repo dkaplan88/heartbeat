@@ -1,21 +1,15 @@
 class Admin::BaseController < ApplicationController
 
-  before_action :authenticate
+  before_action :authenticate_user!
+  before_action :authorize_user!
+
 
   protected
 
-  def authenticate
-    authenticate_or_request_with_http_basic 'Heartbeat' do |given_username, given_password|
-      given_username == admin_username and given_password == admin_password
+  def authorize_user!
+    unless current_user.admin?
+      redirect_to :root, notice: 'Nope.'
     end
-  end
-
-  def admin_username
-    ENV['HEARTBEAT_ADMIN_USERNAME'] or raise 'Missing environment var HEARTBEAT_ADMIN_USERNAME!'
-  end
-
-  def admin_password
-    ENV['HEARTBEAT_ADMIN_PASSWORD'] or raise 'Missing environment var HEARTBEAT_ADMIN_PASSWORD!'
   end
 
 end

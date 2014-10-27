@@ -11,11 +11,12 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140527163553) do
+ActiveRecord::Schema.define(version: 20140723161152) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
   enable_extension "uuid-ossp"
+  enable_extension "hstore"
 
   create_table "metrics", id: :uuid, default: "uuid_generate_v4()", force: true do |t|
     t.text     "name",                        null: false
@@ -34,38 +35,84 @@ ActiveRecord::Schema.define(version: 20140527163553) do
     t.uuid     "metric_id"
     t.integer  "rating"
     t.text     "comments"
-    t.boolean  "completed",     default: false, null: false
+    t.boolean  "completed",       default: false, null: false
     t.datetime "completed_at"
-  end
-
-  add_index "submission_metrics", ["submission_id", "metric_id"], name: "index_submission_metrics_on_submission_id_and_metric_id", using: :btree
-
-  create_table "submissions", id: :uuid, default: "uuid_generate_v4()", force: true do |t|
-    t.uuid     "user_id"
-    t.boolean  "completed",                default: false, null: false
-    t.datetime "completed_at"
-    t.string   "comments",     limit: 140
+    t.boolean  "comments_public", default: true
     t.datetime "created_at"
     t.datetime "updated_at"
   end
 
+  add_index "submission_metrics", ["metric_id", "created_at"], name: "index_submission_metric_metric_created", using: :btree
+  add_index "submission_metrics", ["metric_id", "updated_at"], name: "index_submission_metrics_on_metric_id_and_updated_at", using: :btree
+  add_index "submission_metrics", ["submission_id", "created_at"], name: "index_submission_metric_submission__created", using: :btree
+  add_index "submission_metrics", ["submission_id", "metric_id", "created_at"], name: "index_submission_metric_submission_metric_created", using: :btree
+  add_index "submission_metrics", ["submission_id", "metric_id"], name: "index_submission_metrics_on_submission_id_and_metric_id", using: :btree
+  add_index "submission_metrics", ["updated_at"], name: "index_submission_metrics_on_updated_at", using: :btree
+
+  create_table "submission_reminder_templates", id: :uuid, default: "uuid_generate_v4()", force: true do |t|
+    t.date     "submissions_start_date",                 null: false
+    t.date     "submissions_end_date",                   null: false
+    t.datetime "reify_at"
+    t.boolean  "reified",                default: false, null: false
+    t.text     "medium",                                 null: false
+    t.text     "template",                               null: false
+    t.hstore   "meta"
+  end
+
+  add_index "submission_reminder_templates", ["reified", "reify_at"], name: "index_submission_reminder_templates_on_reified_and_reify_at", using: :btree
+
+  create_table "submission_reminders", id: :uuid, default: "uuid_generate_v4()", force: true do |t|
+    t.uuid     "submission_id",                                   null: false
+    t.text     "medium",                                          null: false
+    t.text     "message"
+    t.hstore   "meta"
+    t.boolean  "sent",                            default: false, null: false
+    t.datetime "sent_at"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.uuid     "submission_reminder_template_id"
+  end
+
+  add_index "submission_reminders", ["created_at", "sent"], name: "index_submission_reminders_on_created_at_and_sent", using: :btree
+  add_index "submission_reminders", ["sent"], name: "index_submission_reminders_on_sent", using: :btree
+  add_index "submission_reminders", ["submission_id"], name: "index_submission_reminders_on_submission_id", using: :btree
+
+  create_table "submissions", id: :uuid, default: "uuid_generate_v4()", force: true do |t|
+    t.uuid     "user_id"
+    t.boolean  "completed",                   default: false, null: false
+    t.datetime "completed_at"
+    t.string   "comments",        limit: 140
+    t.datetime "created_at"
+    t.datetime "updated_at"
+    t.boolean  "comments_public",             default: true
+    t.string   "tags",                        default: [],                 array: true
+  end
+
   add_index "submissions", ["created_at"], name: "index_submissions_on_created_at", using: :btree
+  add_index "submissions", ["tags"], name: "index_submissions_on_tags", using: :gin
+  add_index "submissions", ["updated_at"], name: "index_submissions_on_updated_at", using: :btree
   add_index "submissions", ["user_id"], name: "index_submissions_on_user_id", using: :btree
 
   create_table "users", id: :uuid, default: "uuid_generate_v4()", force: true do |t|
     t.text     "name"
-    t.text     "email",           null: false
     t.uuid     "manager_user_id"
-    t.text     "manager_email"
     t.datetime "created_at"
     t.datetime "updated_at"
+    t.boolean  "admin",           default: false, null: false
+    t.boolean  "active",          default: true,  null: false
+    t.string   "tags",            default: [],                 array: true
+    t.text     "email"
   end
 
-  add_index "users", ["email"], name: "index_users_on_email", unique: true, using: :btree
+  add_index "users", ["active"], name: "index_users_on_active", using: :btree
+  add_index "users", ["email"], name: "index_users_on_email", using: :btree
   add_index "users", ["manager_user_id"], name: "index_users_on_manager_user_id", using: :btree
+  add_index "users", ["tags"], name: "index_users_on_tags", using: :gin
 
   add_foreign_key "submission_metrics", "metrics", name: "submission_metrics_metric_id_fk"
   add_foreign_key "submission_metrics", "submissions", name: "submission_metrics_submission_id_fk"
+
+  add_foreign_key "submission_reminders", "submission_reminder_templates", name: "submission_reminders_submission_reminder_template_id_fk"
 
   add_foreign_key "submissions", "users", name: "submissions_user_id_fk"
 

@@ -2,18 +2,19 @@
 #
 # Table name: submission_metrics
 #
-#  id            :uuid             not null, primary key
-#  submission_id :uuid
-#  metric_id     :uuid
-#  rating        :integer
-#  comments      :text
-#  completed     :boolean          default(FALSE), not null
-#  completed_at  :datetime
+#  id              :uuid             not null, primary key
+#  submission_id   :uuid
+#  metric_id       :uuid
+#  rating          :integer
+#  comments        :text
+#  completed       :boolean          default(FALSE), not null
+#  completed_at    :datetime
+#  comments_public :boolean          default(TRUE)
+#  created_at      :datetime
+#  updated_at      :datetime
 #
 
 class SubmissionMetric < ActiveRecord::Base
-
-  VALID_RATINGS = [1, 2, 3, 4]
 
   scope :required,  -> { joins(:metric).where(metrics: {required: true}) }
   scope :optional,  -> { joins(:metric).where(metrics: {required: false}) }
@@ -36,7 +37,7 @@ class SubmissionMetric < ActiveRecord::Base
 
 
   def rating= value
-    if VALID_RATINGS.include? value.to_i
+    if Heartbeat::VALID_RATINGS.include? value.to_i
       self[:rating] = value.to_i
     end
   end

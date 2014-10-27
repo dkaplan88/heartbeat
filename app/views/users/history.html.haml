@@ -1,0 +1,20 @@
+= render partial: 'nav'
+
+.user
+  .history
+    - @submissions.each do |submission|
+      %section.user-submission
+        %h4
+          = submission.created_at.format_like 'August 3, 2014'
+          - if submission.open?
+            = link_to submission do
+              = icon 'arrow-right'
+
+        - submission.submission_metrics.ordered.each do |submission_metric|
+          %ul.metrics
+            %li.metric
+              <strong>#{submission_metric.name}</strong>:
+              = submission_metric.rating.presence || 'n/a'
+              - if submission_metric.comments.present?
+                .comment
+                  .content= submission_metric.comments
